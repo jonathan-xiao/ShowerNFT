@@ -140,10 +140,10 @@ Why is my wallet connection not working? [paste error]
 
 ### Phase 2: Web3 Integration 🚧
 
-- [ ] MetaMask wallet connection
-- [ ] Smart contract deployment (Base/Polygon)
-- [ ] NFT minting with metadata
-- [ ] 24-hour expiry logic
+- [x] MetaMask wallet connection
+- [x] Smart contract deployment (Base/Polygon)
+- [x] NFT minting with metadata
+- [x] 24-hour expiry logic (NFT does not burn itself)
 
 ### Phase 3: Social Features 🔜
 
