@@ -1,7 +1,11 @@
 <script lang="ts">
-  import { showView } from "$lib/stores";
+  import { showView, tutorialCompleted } from "$lib/stores";
 
   let certified = false;
+
+  function proceedToInteractiveTutorial() {
+    showView("showertutorial");
+  }
 
   function skipToMinting() {
     showView("minting");
@@ -51,6 +55,16 @@
       Tepid-drying). This ensures moisture removal while maintaining skin
       integrity.
     </p>
+
+    <h3 class="font-bold">Module 4: Interactive Verification Protocol</h3>
+    <p>
+      Upon agreement to these terms, you will complete a live, webcam-based
+      tutorial demonstrating proper shower technique. Our ML-powered pose
+      detection system will verify your understanding of: lathering hands,
+      scrubbing head, scrubbing arms, and scrubbing armpits. Each action must be
+      performed continuously for 10 seconds. Failure to comply will reset the
+      verification process.
+    </p>
   </div>
   <div class="flex items-center space-x-3">
     <input
@@ -60,17 +74,17 @@
       class="h-5 w-5 rounded text-blue-600 border-gray-300 focus:ring-blue-500"
     />
     <label for="tutorial-check" class="text-gray-700"
-      >I certify I have completed the pre-shower<br />hygiene-protocol
-      orientation.</label
+      >I certify I have read and agree to the Groom Protocol<br />Shower
+      Verification Terms & Conditions.</label
     >
   </div>
   <button
-    on:click={() => showView("verification")}
+    on:click={proceedToInteractiveTutorial}
     disabled={!certified}
-    class="w-full bg-blue-600 text-white font-bold text-lg py-4 px-6 rounded-lg shadow-lg transition duration-300 ease-in-out"
+    class="w-full bg-blue-600 text-white font-bold text-lg py-4 px-6 rounded-lg shadow-lg transition duration-300 ease-in-out hover:bg-blue-700"
     class:opacity-50={!certified}
     class:cursor-not-allowed={!certified}
   >
-    I Am Shower Approved™
+    Proceed to Interactive Tutorial
   </button>
 </div>
