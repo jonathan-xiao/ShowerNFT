@@ -5,8 +5,16 @@ import {
 	onAuthStateChanged,
 	type User
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, updateDoc, arrayUnion } from 'firebase/firestore';
-import { currentUser, hasCompletedOnboarding, friendsPhoneNumbers, tutorialCompleted, walletAddress } from './stores';
+import { doc, setDoc, getDoc, updateDoc, deleteField } from 'firebase/firestore';
+import { ref, uploadString, getDownloadURL, deleteObject } from 'firebase/storage';
+import { storage } from './firebase';
+import {
+	currentUser,
+	hasCompletedOnboarding,
+	friendsPhoneNumbers,
+	tutorialCompleted,
+	walletAddress
+} from './stores';
 
 /**
  * Initialize auth state listener
@@ -151,14 +159,17 @@ export async function saveWalletAddress(address: string) {
 }
 
 /**
- * Record NFT mint to user's history
+ * Record latest NFT mint (overwrites previous)
+ * Only stores the most recent NFT - old ones should be burned!
  */
 export async function recordNFTMint(mintData: {
 	tokenId: number;
 	txHash: string;
 	showerThought: string;
+	imageUrl?: string;
 	duration: number;
 	walletAddress: string;
+	customTimeout?: number;
 }) {
 	const user = auth.currentUser;
 	if (!user) {
@@ -166,25 +177,31 @@ export async function recordNFTMint(mintData: {
 	}
 
 	try {
-		const mintTimestamp = new Date().toISOString();
-		const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(); // 24 hours from now
+		const now = Math.floor(Date.now() / 1000); // Unix timestamp in seconds
+		const customTimeout = mintData.customTimeout || 86400; // Default 24hr
+		const expiresAt = now + customTimeout;
 
 		const nftRecord = {
 			tokenId: mintData.tokenId,
 			txHash: mintData.txHash,
-			showerThought: mintData.showerThought,
+			showerThought: mintData.showerThought || '',
+			imageUrl: mintData.imageUrl || '',
 			duration: mintData.duration,
 			walletAddress: mintData.walletAddress,
-			mintedAt: mintTimestamp,
-			expiresAt: expiresAt,
-			isActive: true
+			mintTime: now, // Unix timestamp (seconds)
+			customTimeout: customTimeout, // Timeout in seconds
+			expiresAt: expiresAt, // Unix timestamp (seconds)
+			isActive: true,
+			createdAt: new Date().toISOString()
 		};
 
-		// Add to nftMints array
+		// Store latest NFT directly in user document (replaces previous)
 		await updateDoc(doc(db, 'users', user.uid), {
-			nftMints: arrayUnion(nftRecord),
-			lastMintAt: mintTimestamp
+			latestNFT: nftRecord,
+			lastMintAt: new Date().toISOString()
 		});
+
+		console.log('✅ Latest NFT recorded to Firestore:', nftRecord);
 
 		return { success: true, mintRecord: nftRecord };
 	} catch (error: any) {
@@ -194,9 +211,9 @@ export async function recordNFTMint(mintData: {
 }
 
 /**
- * Get user's NFT mint history
+ * Get user's latest NFT (returns null if stinky!)
  */
-export async function getUserNFTHistory() {
+export async function getLatestNFT() {
 	const user = auth.currentUser;
 	if (!user) {
 		return { success: false, error: 'No user logged in' };
@@ -206,11 +223,81 @@ export async function getUserNFTHistory() {
 		const userDoc = await getDoc(doc(db, 'users', user.uid));
 		if (userDoc.exists()) {
 			const data = userDoc.data();
-			return { success: true, nftMints: data.nftMints || [] };
+			return { success: true, latestNFT: data.latestNFT || null };
 		}
-		return { success: true, nftMints: [] };
+		return { success: true, latestNFT: null };
 	} catch (error: any) {
-		console.error('Error fetching NFT history:', error);
+		console.error('Error fetching latest NFT:', error);
+		return { success: false, error: error.message };
+	}
+}
+
+/**
+ * Upload image to Firebase Storage (client-side with auth)
+ */
+export async function uploadShowerImage(imageDataUrl: string, userId: string): Promise<{ success: boolean; url?: string; error?: string }> {
+	try {
+		if (!imageDataUrl || !userId) {
+			return { success: false, error: 'Missing imageDataUrl or userId' };
+		}
+
+		// Create unique filename with timestamp
+		const timestamp = Date.now();
+		const filename = `shower-selfies/${userId}/${timestamp}.jpg`;
+
+		// Create storage reference
+		const storageRef = ref(storage, filename);
+
+		// Upload base64 image (client-side with user's auth token)
+		await uploadString(storageRef, imageDataUrl, 'data_url');
+
+		// Get download URL
+		const downloadURL = await getDownloadURL(storageRef);
+
+		return { success: true, url: downloadURL };
+	} catch (error: any) {
+		console.error('Image upload error:', error);
+		return { success: false, error: error.message };
+	}
+}
+
+/**
+ * Delete expired NFT and its image from Firebase
+ */
+export async function deleteExpiredNFT(imageUrl?: string) {
+	const user = auth.currentUser;
+	if (!user) {
+		return { success: false, error: 'No user logged in' };
+	}
+
+	try {
+		// Delete image from Storage if URL provided
+		if (imageUrl) {
+			try {
+				// Extract storage path from URL
+				// URL format: https://firebasestorage.googleapis.com/v0/b/{bucket}/o/{path}?token=...
+				const pathMatch = imageUrl.match(/o\/(.+?)\?/);
+				if (pathMatch) {
+					const storagePath = decodeURIComponent(pathMatch[1]);
+					const imageRef = ref(storage, storagePath);
+					await deleteObject(imageRef);
+					console.log('✅ Deleted expired NFT image from Storage:', storagePath);
+				}
+			} catch (storageError) {
+				console.error('⚠️ Failed to delete image from Storage:', storageError);
+				// Continue anyway - don't fail the whole operation
+			}
+		}
+
+		// Delete latestNFT from Firestore
+		await updateDoc(doc(db, 'users', user.uid), {
+			latestNFT: deleteField()
+		});
+
+		console.log('✅ Deleted expired NFT from Firestore');
+		return { success: true };
+	} catch (error: any) {
+		console.error('❌ Error deleting expired NFT:', error);
 		return { success: false, error: error.message };
 	}
 }
@@ -236,3 +323,65 @@ export async function getUserFriendPhones() {
 		return { success: false, error: error.message };
 	}
 }
+
+/**
+ * Send SMS notifications to friends when NFT expires
+ */
+export async function sendExpiryNotifications(userName: string, friendPhones: string[]) {
+	if (!friendPhones || friendPhones.length === 0) {
+		console.log('ℹ️ No friends to notify');
+		return { success: true, sent: 0 };
+	}
+
+	const accountSid = import.meta.env.VITE_TWILIO_ACCOUNT_SID;
+	const authToken = import.meta.env.VITE_TWILIO_AUTH_TOKEN;
+	const fromNumber = import.meta.env.VITE_TWILIO_PHONE_NUMBER;
+
+	if (!accountSid || !authToken || !fromNumber) {
+		console.error('❌ Twilio credentials not configured');
+		return { success: false, error: 'Twilio not configured' };
+	}
+
+	const message = `🚿 ALERT: ${userName} is now officially STINKY! Their Proof-of-Lather NFT has expired. Shame them into showering! - The Groom Protocol`;
+
+	let successCount = 0;
+	let errors: string[] = [];
+
+	for (const phoneNumber of friendPhones) {
+		try {
+			// Use Twilio REST API
+			const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
+			const response = await fetch(url, {
+				method: 'POST',
+				headers: {
+					'Authorization': 'Basic ' + btoa(`${accountSid}:${authToken}`),
+					'Content-Type': 'application/x-www-form-urlencoded',
+				},
+				body: new URLSearchParams({
+					To: phoneNumber,
+					From: fromNumber,
+					Body: message,
+				}),
+			});
+
+			if (response.ok) {
+				successCount++;
+				console.log(`✅ SMS sent to ${phoneNumber}`);
+			} else {
+				const error = await response.text();
+				errors.push(`${phoneNumber}: ${error}`);
+				console.error(`❌ Failed to send SMS to ${phoneNumber}:`, error);
+			}
+		} catch (error: any) {
+			errors.push(`${phoneNumber}: ${error.message}`);
+			console.error(`❌ Error sending SMS to ${phoneNumber}:`, error);
+		}
+	}
+
+	return {
+		success: successCount > 0,
+		sent: successCount,
+		errors: errors.length > 0 ? errors : undefined,
+	};
+}
+

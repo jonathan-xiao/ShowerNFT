@@ -19,19 +19,22 @@ When your NFT expires, your friends get notified that you've become "stinky" —
 - ✅ **Google Authentication** - Firebase Auth with user profiles
 - ✅ **Wallet Integration** - MetaMask connection with Base Sepolia testnet
 - ✅ **Interactive Pose Tutorial** - TensorFlow.js MoveNet pose detection for shower gesture verification
-- ✅ **NFT Minting** - ERC-721 smart contract with 24-hour expiry logic
+- ✅ **NFT Minting** - ERC-721 smart contract with custom timeout & metadata storage
 - ✅ **Gamified Verification** - Memory games and mini-challenges
-- ✅ **User Dashboard** - 24-hour countdown timer showing NFT validity
-- ✅ **Firebase Backend** - User profiles, NFT history, friend phone numbers
+- ✅ **User Dashboard** - Real-time countdown timer showing NFT validity
+- ✅ **Firebase Backend** - User profiles, latest NFT status, friend phone numbers
+- ✅ **Image Upload** - Client-side Firebase Storage with automatic deletion on expiry
+- ✅ **SMS Notifications** - Twilio integration with 10-second client-side polling
+- ✅ **Automatic Cleanup** - Expired NFTs deleted from Firebase (Firestore + Storage)
 - ✅ **Vercel Deployment** - CI/CD with auto-deploy from GitHub
 
 ### Planned Features
 
-- 🔜 **SMS Notifications** - Twilio integration to notify friends when NFT expires
 - 🔜 **User Discovery** - Browse other users' hygiene status
-- 🔜 **Enhanced Smart Contract** - Custom timeouts for demo, auto-burn on expiry
+- 🔜 **Enhanced Smart Contract Deployment** - Deploy ShowerNFTv2 to Base Sepolia
+- 🔜 **Blockchain Auto-Burn** - Chainlink Automation for on-chain NFT burning
 - 🔜 **Streak Tracking** - Leaderboard of cleanest students
-- 🔜 **Photo Verification** - Shower selfies with funny filters
+- 🔜 **Photo Filters** - Fun shower selfie filters and stickers
 
 ---
 
@@ -47,12 +50,13 @@ When your NFT expires, your friends get notified that you've become "stinky" —
 ### Backend & Services
 
 - **Authentication**: Firebase Auth (Google OAuth)
-- **Database**: Firestore (user profiles, NFT history, friends)
+- **Database**: Firestore (user profiles, latest NFT status, friends)
+- **Storage**: Firebase Storage (shower selfie images with auto-deletion)
 - **Blockchain**: ethers.js v6, MetaMask, Base Sepolia testnet
-- **Smart Contract**: ERC-721 NFT with 24-hour expiry
+- **Smart Contract**: ShowerNFTv2 ERC-721 with metadata & custom expiry
 - **ML**: TensorFlow.js with MoveNet Lightning (pose detection)
-- **Deployment**: Vercel (serverless functions, cron jobs)
-- **Notifications**: Twilio SMS (configured, not yet implemented)
+- **Notifications**: Twilio SMS (10-second client-side polling)
+- **Deployment**: Vercel (auto-deploy from GitHub, no cron needed)
 
 ---
 
@@ -83,6 +87,8 @@ cp .env.example .env
 npm run dev
 ```
 
+Visit `http://localhost:5173` and test with a 1-minute timeout for quick expiry testing!
+
 ### Environment Variables
 
 Create a `.env` file with:
@@ -96,13 +102,10 @@ VITE_FIREBASE_STORAGE_BUCKET=
 VITE_FIREBASE_MESSAGING_SENDER_ID=
 VITE_FIREBASE_APP_ID=
 
-# Twilio (server-side only)
-TWILIO_ACCOUNT_SID=
-TWILIO_AUTH_TOKEN=
-TWILIO_PHONE_NUMBER=
-
-# Vercel Cron
-CRON_SECRET=your_random_secret_string
+# Twilio (client-side access for SMS)
+VITE_TWILIO_ACCOUNT_SID=
+VITE_TWILIO_AUTH_TOKEN=
+VITE_TWILIO_PHONE_NUMBER=
 ```
 
 ### Build for Production
@@ -121,8 +124,9 @@ src/
 ├── lib/
 │   ├── stores.ts                    # Global state management (Svelte stores)
 │   ├── firebase.ts                  # Firebase config & initialization
-│   ├── authService.ts               # Auth & Firestore operations
+│   ├── authService.ts               # Auth, Firestore, Storage, SMS notifications
 │   ├── web3.ts                      # Web3 utilities (wallet, minting)
+│   ├── alchemyService.ts            # Alchemy API (DEPRECATED - not used)
 │   ├── components/
 │   │   ├── Login.svelte             # Google Sign-In
 │   │   ├── Onboarding.svelte        # Wallet + friends setup
@@ -146,12 +150,14 @@ src/
     ├── +layout.svelte
     └── api/
         └── check-expired-nfts/
-            └── +server.ts           # Serverless cron for SMS notifications
+            └── +server.ts           # Legacy API endpoint (NOT USED)
 
 .github/
 ├── copilot-instructions.md          # AI development guide
 ├── google_firebase_design.md        # Firebase architecture docs
+├── sms_design.md                    # SMS notification system ⭐ NEW
 ├── shower_tutorial_design.md        # ML pose detection technical docs
+├── upgraded_smart_contract.md       # ShowerNFTv2 upgrade documentation
 └── vercel_design.md                 # Deployment & CI/CD guide
 
 ShowerNFT.sol                        # ERC-721 smart contract
@@ -181,9 +187,18 @@ vercel.json                          # Vercel config + cron jobs
 ### Firebase Backend
 
 - **Google OAuth** for user authentication
-- **Firestore** stores user profiles, NFT history, friend phone numbers
-- **Auto-loading** of wallet address and tutorial completion status
+- **Firestore** stores user profiles, latest NFT status (single object), friend phone numbers
+- **Firebase Storage** for shower selfie images with automatic deletion on expiry
+- **Client-side operations** for seamless auth context
 - 📖 **Details**: See `.github/google_firebase_design.md`
+
+### SMS Notifications
+
+- **Twilio API** for sending SMS to friends on NFT expiry
+- **Client-side polling** every 10 seconds (no Vercel cron needed)
+- **Automatic cleanup** deletes expired NFTs from Firestore + Storage
+- **Visual debug timer** shows seconds until next check
+- 📖 **Details**: See `.github/sms_design.md`
 
 ### ML Pose Detection
 
@@ -195,28 +210,32 @@ vercel.json                          # Vercel config + cron jobs
 
 ### Blockchain
 
-- **Smart Contract**: `ShowerNFT.sol` deployed to Base Sepolia (`0x4068028D9161B31c3dde5C5C99C4F12205b6C7b7`)
-- **ERC-721** with 24-hour expiry logic (`isValid()`, `timeRemaining()`, `expiryTime()`)
-- **MetaMask** integration with auto-network switching
+- **Smart Contract**: `ShowerNFTv2.sol` (awaiting deployment to Base Sepolia)
+- **ERC-721** with custom timeout, metadata storage (shower thought + image URL)
+- **MetaMask** integration with auto-network switching and 5-minute confirmation timeout
+- **Firebase as source of truth** - Blockchain NFTs are permanent, Firebase tracks active status
 - **OpenSea Testnet** integration for viewing minted NFTs
+- 📖 **Details**: See `.github/upgraded_smart_contract.md`
 
 ### Deployment
 
 - **Vercel** serverless hosting with auto-deploy from GitHub
-- **Cron jobs** (hourly) to check expired NFTs and trigger SMS notifications
+- **No cron jobs needed** - client-side polling handles expiry checks
 - **Environment variables** managed via Vercel dashboard
 - 📖 **Details**: See `.github/vercel_design.md`
 
 ---
 
-## � Documentation
+## 📚 Documentation
 
 Detailed technical documentation is available in `.github/`:
 
 - **[`copilot-instructions.md`](.github/copilot-instructions.md)** - AI development guide, project context, roadmap
 - **[`google_firebase_design.md`](.github/google_firebase_design.md)** - Firebase architecture, database schema, API functions
+- **[`sms_design.md`](.github/sms_design.md)** - ⭐ **NEW**: SMS notification system with client-side polling
 - **[`shower_tutorial_design.md`](.github/shower_tutorial_design.md)** - ML pose detection implementation, performance optimizations
-- **[`vercel_design.md`](.github/vercel_design.md)** - Deployment setup, CI/CD pipeline, cron jobs, troubleshooting
+- **[`upgraded_smart_contract.md`](.github/upgraded_smart_contract.md)** - ShowerNFTv2 technical documentation
+- **[`vercel_design.md`](.github/vercel_design.md)** - Deployment setup, CI/CD pipeline, troubleshooting
 
 ---
 
@@ -258,23 +277,29 @@ npm run format
 - [x] Google Authentication with Firebase
 - [x] MetaMask wallet integration
 - [x] ML-powered pose detection tutorial (TensorFlow.js)
-- [x] Smart contract deployment to Base Sepolia
-- [x] NFT minting with 24-hour expiry
-- [x] User dashboard with countdown timer
-- [x] Firestore backend (user profiles, NFT history, friends)
-- [x] Vercel deployment setup with CI/CD
+- [x] Smart contract with custom timeout and metadata (ShowerNFTv2)
+- [x] NFT minting with configurable expiry
+- [x] User dashboard with real-time countdown timer
+- [x] Firestore backend (user profiles, latest NFT status, friends)
+- [x] Firebase Storage with automatic image deletion on expiry
+- [x] Client-side image upload
+- [x] SMS notifications via Twilio (10-second polling)
+- [x] Automatic NFT cleanup (Firestore + Storage)
+- [x] Visual debug countdown timer
+- [x] Vercel deployment with CI/CD
 - [x] Memory game verification
+- [x] Tutorial skip for returning users
+- [x] Firebase as single source of truth (not blockchain)
 
 ### 🚧 In Progress
 
-- [ ] SMS notifications via Twilio (configured, needs implementation)
+- [ ] Deploy ShowerNFTv2 to Base Sepolia (contract ready, awaiting deployment)
 - [ ] User discovery page (search by email, view NFT status)
-- [ ] Enhanced smart contract with custom timeouts
 
 ### 🔜 Planned Features
 
-- [ ] Real-time blockchain countdown (query contract instead of mock timer)
-- [ ] Auto-burn NFT on expiry
+- [ ] Blockchain auto-burn (Chainlink Automation)
+- [ ] Real-time blockchain countdown (query contract for expiry)
 - [ ] Streak tracking & achievements
 - [ ] Public leaderboard of cleanest students
 - [ ] Photo verification with filters
@@ -303,9 +328,12 @@ npm run dev
 # Test wallet connection (requires MetaMask)
 # Visit http://localhost:5173
 
-# Test cron endpoint (requires .env setup)
-curl -X GET http://localhost:5173/api/check-expired-nfts \
-  -H "Authorization: Bearer ${CRON_SECRET}"
+# Test SMS notifications (1-minute timeout)
+# 1. Mint NFT with custom timeout: 1 minute
+# 2. Watch console: "🔍 Next expiry check in: 10s"
+# 3. Wait 60 seconds
+# 4. Should see: "📱 Sending SMS to X friends..."
+# 5. Check phone for SMS
 ```
 
 ### Production Testing
@@ -336,6 +364,19 @@ curl -X GET http://localhost:5173/api/check-expired-nfts \
 - Allow camera permissions in browser
 - Check WebGL 2.0 support (chrome://gpu)
 - Wait for model to load (~5-10 seconds)
+
+**SMS not sending:**
+
+- Verify Twilio credentials in `.env` (all prefixed with `VITE_`)
+- Check console for errors: "❌ Twilio credentials not configured"
+- Ensure phone numbers are verified in Twilio (trial mode)
+- Check polling is active: "🔍 Next expiry check in: Xs"
+
+**NFT not deleted after expiry:**
+
+- Check Firebase console for `latestNFT` field removal
+- Verify polling interval is running (check debug timer)
+- Ensure user is logged in when expiry occurs
 
 **Build errors:**
 

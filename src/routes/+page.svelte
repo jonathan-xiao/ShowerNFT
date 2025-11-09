@@ -2,7 +2,6 @@
   import { onMount } from "svelte";
   import "../app.css";
   import { view, currentUser, hasCompletedOnboarding } from "$lib/stores";
-  import { preloadModel } from "$lib/ml/poseDetector";
   import { initAuthListener } from "$lib/authService";
   import Dashboard from "$lib/components/Dashboard.svelte";
   import Hero from "$lib/components/Hero.svelte";
@@ -30,13 +29,7 @@
     complete: Complete,
   };
 
-  // 🚀 PRELOAD MODEL IMMEDIATELY ON APP START FOR INSTANT TUTORIAL!
   onMount(() => {
-    console.log(
-      "🎯 App mounted, preloading TensorFlow.js model in background..."
-    );
-    preloadModel();
-
     // Initialize Firebase auth listener
     initAuthListener();
   });

@@ -48,11 +48,11 @@
 
     try {
       console.log("📹 Webcam ready, initializing pose detector...");
-      // Model should already be preloaded - this returns instantly! ⚡
+      // Load TensorFlow.js model (takes ~5-10 seconds)
       await initPoseDetector();
       detector = getDetector();
       isLoading = false;
-      console.log("✅ Pose detector ready (preloaded!)");
+      console.log("✅ Pose detector ready!");
     } catch (error) {
       console.error("❌ Pose detector initialization failed:", error);
       loadError =
@@ -113,9 +113,7 @@
 
   {#if !isLoading && !loadError}
     <div class="bg-green-50 border border-green-200 p-3 rounded text-sm">
-      <p class="text-green-700 font-medium">
-        ✅ Model loaded! (Preloaded on app start for instant demo)
-      </p>
+      <p class="text-green-700 font-medium">✅ ML model loaded successfully!</p>
     </div>
   {/if}
 
@@ -134,7 +132,7 @@
       <div
         class="animate-spin inline-block w-8 h-8 border-4 border-blue-600 border-t-transparent rounded-full"
       ></div>
-      <p class="mt-2">⚡ Initializing (should be instant!)...</p>
+      <p class="mt-2">⚡ Initializing...</p>
     </div>
   {:else if currentStep}
     <ShowerStep

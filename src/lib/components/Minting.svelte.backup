@@ -67,14 +67,35 @@
     errorMessage = "";
 
     try {
-      // Step 1: Upload image to Firebase Storage (client-side with auth)
-      const uploadResult = await uploadShowerImage($capturedImageData, $currentUser.uid);
+      // Step 1: Upload image to Firebase Storage
+      console.log("� DEBUG: Starting mint process");
+      console.log("🔍 User ID:", $currentUser.uid);
+      console.log("🔍 User email:", $currentUser.email);
+      console.log("🔍 Image data length:", $capturedImageData?.length);
+      console.log("�📤 Uploading shower selfie...");
+      
+      const uploadResponse = await fetch("/api/upload-image", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          imageDataUrl: $capturedImageData,
+          userId: $currentUser.uid,
+        }),
+      });
 
-      if (!uploadResult.success || !uploadResult.url) {
-        throw new Error(uploadResult.error || "Failed to upload image");
+      console.log("🔍 Upload response status:", uploadResponse.status);
+      console.log("🔍 Upload response ok:", uploadResponse.ok);
+
+      if (!uploadResponse.ok) {
+        const errorData = await uploadResponse.json();
+        console.error("❌ Upload failed with error:", errorData);
+        throw new Error(errorData.error || "Failed to upload image");
       }
 
-      const imageUrl = uploadResult.url;
+      const uploadData = await uploadResponse.json();
+      const imageUrl = uploadData.url;
+      console.log("✅ Image uploaded successfully!");
+      console.log("🔍 Image URL:", imageUrl);
 
       // Step 2: Calculate timeout in seconds (0 = default 24hr)
       const timeoutSeconds =
@@ -98,11 +119,7 @@
           customTimeout: timeoutSeconds,
         });
 
-        // Clear captured image for next time
-        capturedImageData.set(null);
-
-        // Success! Show complete screen
-        showView("complete");
+        // Success! The Loading component will handle the transition to Complete
       } else {
         // Show error and go back
         errorMessage = result.error || "Failed to mint NFT";
@@ -137,7 +154,7 @@
       <p class="text-sm mb-2">Please connect your MetaMask wallet to mint.</p>
       <button
         on:click={handleConnectWallet}
-        class="w-full bg-orange-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-orange-600 transition-colors"
+        class="w-full bg-orange-500 text-white font-bold py-2 px-4 rounded hover:bg-orange-600"
       >
         🦊 Connect MetaMask
       </button>
@@ -151,7 +168,7 @@
     </div>
     <ImageCapture onImageCaptured={handleImageCaptured} />
     {#if $capturedImageData}
-      <p class="text-green-600 text-sm font-medium">
+      <p class="text-green-600 text-sm">
         ✅ Image captured! Will upload when you mint.
       </p>
     {/if}

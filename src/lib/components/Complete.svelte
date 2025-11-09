@@ -5,9 +5,39 @@
     showerThought,
     walletAddress,
     mintTxHash,
+    mintedTokenId,
+    latestNFTData,
+    isLoadingNFTData,
+    currentUser,
   } from "$lib/stores";
   import { formatAddress, CONTRACT_ADDRESS } from "$lib/web3";
   import { get } from "svelte/store";
+  import { getLatestNFT } from "$lib/authService";
+  import { onMount } from "svelte";
+
+  // Load NFT data from Firebase on mount
+  onMount(async () => {
+    if ($currentUser) {
+      console.log("🎨 Loading NFT data from Firebase for Complete screen...");
+      isLoadingNFTData.set(true);
+      const result = await getLatestNFT();
+      
+      if (result.success && result.latestNFT) {
+        const nftRecord = result.latestNFT;
+        latestNFTData.set({
+          tokenId: nftRecord.tokenId,
+          expiresAt: nftRecord.expiresAt,
+          mintTime: nftRecord.mintTime,
+          showerThought: nftRecord.showerThought,
+          imageUrl: nftRecord.imageUrl,
+          customTimeout: nftRecord.customTimeout || 0,
+          isValid: true
+        });
+        console.log("✅ Loaded NFT from Firebase:", nftRecord);
+      }
+      isLoadingNFTData.set(false);
+    }
+  });
 
   function formatTime(seconds: number) {
     const minutes = Math.floor(seconds / 60);
@@ -41,21 +71,29 @@
   <div
     class="bg-blue-50 border-4 border-dashed border-blue-200 p-6 rounded-lg shadow-inner"
   >
-    <img
-      src="https://placehold.co/600x400/000000/FFFFFF?text=CERTIFICATE+OF+CLEANLINESS"
-      alt="Certificate of Cleanliness"
-      class="w-full rounded-lg shadow-md mb-4"
-    />
+    <!-- Show actual NFT image if available, otherwise placeholder -->
+    {#if $latestNFTData?.imageUrl}
+      <img
+        src={$latestNFTData.imageUrl}
+        alt="Your Shower Selfie NFT"
+        class="w-full rounded-lg shadow-md mb-4 object-cover"
+        style="max-height: 400px;"
+      />
+    {:else}
+      <div class="w-full h-64 bg-gray-200 rounded-lg shadow-md mb-4 flex items-center justify-center">
+        <p class="text-gray-500">🖼️ Loading NFT image...</p>
+      </div>
+    {/if}
 
     <h3 class="text-xl font-bold text-left mb-2">NFT Metadata</h3>
     <div class="text-left space-y-1 text-sm">
       <p>
         <strong>Token ID:</strong>
-        <span class="font-mono text-gray-700">#00001</span>
+        <span class="font-mono text-gray-700">#{String($mintedTokenId || $latestNFTData?.tokenId || "???").padStart(5, "0")}</span>
       </p>
       <p>
         <strong>Verification:</strong>
-        <span class="font-mono text-green-700 font-bold">Proof-of-Lather</span>
+        <span class="font-mono text-green-700 font-bold">Proof-of-Lather ✨</span>
       </p>
       <p>
         <strong>Duration:</strong>
@@ -64,7 +102,7 @@
       <p>
         <strong>Shower Thought:</strong>
         <span class="font-mono text-gray-700 italic"
-          >{$showerThought || "N/A (No profound thoughts recorded)"}</span
+          >{$showerThought || $latestNFTData?.showerThought || "N/A (No profound thoughts recorded)"}</span
         >
       </p>
       <p>

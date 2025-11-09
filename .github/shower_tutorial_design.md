@@ -2,11 +2,13 @@
 
 ## Overview
 
-ML-powered webcam verification using TensorFlow.js MoveNet pose detection. Users perform 4 shower gestures (10 seconds each) with real-time skeleton visualization.
+ML-powered webcam verification using TensorFlow.js MoveNet pose detection. Users perform 3 shower gestures (10 seconds each) with real-time skeleton visualization.
 
 **Component Hierarchy**: `ShowerTutorial` → `WebcamFeed` → `PoseOverlay` (ML inference) + `ShowerStep` (gesture validation)
 
 **Data Flow**: Video → PoseOverlay (30 FPS) → `$currentPoses` store → ShowerStep validates gesture → Timer advances only when active
+
+**Model Loading**: TensorFlow.js and MoveNet load on-demand when user reaches ShowerTutorial screen (~5-10 seconds). No preloading complexity - verification is a one-time flow per user.
 
 ---
 

@@ -1,14 +1,6 @@
 <script lang="ts">
-  import { showView } from "$lib/stores";
-  import { onMount } from "svelte";
-
-  // For demo purposes, we'll still auto-redirect after a delay
-  // In production, this would wait for actual transaction confirmation
-  onMount(() => {
-    setTimeout(() => {
-      showView("complete");
-    }, 5000); // Increased to 5 seconds to simulate blockchain transaction time
-  });
+  // Loading screen waits for actual blockchain confirmation
+  // No automatic redirect - the Minting component handles success/failure
 </script>
 
 <div class="app-view space-y-6 text-center">

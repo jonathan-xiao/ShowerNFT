@@ -12,8 +12,9 @@
     const result = await signInWithGoogle();
 
     if (result.success) {
-      // After successful login, check if onboarding is complete
-      // The auth listener will handle this and redirect appropriately
+      // NFT data will be loaded by Dashboard when it mounts
+      console.log("✅ Signed in successfully");
+      // The auth listener will handle redirection
     } else {
       errorMessage = result.error || "Failed to sign in";
     }

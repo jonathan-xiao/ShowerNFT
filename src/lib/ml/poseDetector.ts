@@ -13,22 +13,35 @@ export interface PoseAnalysis {
 
 let detector: poseDetection.PoseDetector | null = null;
 let isInitializing = false;
-let modelPreloaded = false;
 
-// 🚀 PRELOAD MODEL ON APP START (INSTANT!)
-export async function preloadModel() {
-    if (modelPreloaded || isInitializing) return;
+/**
+ * Initialize pose detector when user reaches ShowerTutorial screen
+ * Loads TensorFlow.js backend + MoveNet model (~5-10 seconds)
+ */
+export async function initPoseDetector() {
+    if (detector) {
+        console.log('✅ Pose detector already loaded, reusing instance');
+        return detector;
+    }
     
-    console.log('🚀 [PRELOAD] Starting TensorFlow.js backend + model download...');
+    if (isInitializing) {
+        console.log('⏳ Pose detector already initializing, waiting...');
+        while (isInitializing) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+        }
+        return detector;
+    }
+    
+    console.log('🚀 Initializing TensorFlow.js backend + MoveNet model...');
     isInitializing = true;
     
     try {
         // Initialize TensorFlow backend (GPU warmup)
         await tf.setBackend('webgl');
         await tf.ready();
-        console.log('✅ [PRELOAD] WebGL backend ready:', tf.getBackend());
+        console.log('✅ WebGL backend ready:', tf.getBackend());
         
-        // Preload MoveNet model (downloads + compiles shaders)
+        // Load MoveNet model
         const detectorConfig = {
             modelType: poseDetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
         };
@@ -38,31 +51,14 @@ export async function preloadModel() {
             detectorConfig
         );
         
-        modelPreloaded = true;
-        console.log('✅ [PRELOAD] MoveNet model ready! Tutorial will start instantly.');
+        console.log('✅ MoveNet model loaded successfully!');
+        return detector;
     } catch (error) {
-        console.error('❌ [PRELOAD] Failed to preload model:', error);
+        console.error('❌ Failed to initialize pose detector:', error);
+        throw error;
     } finally {
         isInitializing = false;
     }
-}
-
-export async function initPoseDetector() {
-    // If already preloaded, return immediately! ⚡
-    if (detector && modelPreloaded) {
-        console.log('⚡ [INSTANT] Model already loaded, skipping init!');
-        return detector;
-    }
-    
-    // Fallback: load model if preload didn't run
-    if (isInitializing) {
-        while (isInitializing) {
-            await new Promise(resolve => setTimeout(resolve, 100));
-        }
-        return detector;
-    }
-    
-    return preloadModel();
 }
 
 // Analyze poses from the store and update gestureAnalysis store

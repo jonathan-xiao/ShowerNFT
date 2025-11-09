@@ -12,14 +12,20 @@ export const connectionError = writable<string | null>(null);
 export const provider = writable<ethers.BrowserProvider | null>(null);
 export const signer = writable<ethers.Signer | null>(null);
 
-// Contract address - will be set after deployment
-export const CONTRACT_ADDRESS = writable<string>('0x4068028D9161B31c3dde5C5C99C4F12205b6C7b7');
+export const CONTRACT_ADDRESS = writable<string>('0x231cBc29528d2E4Cc149Cd288159c10421e51766');
 
-// Basic ERC-721 ABI for minting (we'll update this after contract deployment)
+// ShowerNFTv2 ABI with new functions
 export const CONTRACT_ABI = [
-    "function mint(address to) public returns (uint256)",
-    "function balanceOf(address owner) public view returns (uint256)",
-    "function tokenURI(uint256 tokenId) public view returns (string memory)"
+	'function mint(string memory showerThought, string memory imageUrl, uint256 customTimeout) public returns (uint256)',
+	'function balanceOf(address owner) public view returns (uint256)',
+	'function tokenURI(uint256 tokenId) public view returns (string memory)',
+	'function isValid(uint256 tokenId) public view returns (bool)',
+	'function timeRemaining(uint256 tokenId) public view returns (uint256)',
+	'function expiryTime(uint256 tokenId) public view returns (uint256)',
+	'function getMetadata(uint256 tokenId) public view returns (tuple(uint256 mintTime, uint256 customTimeout, string showerThought, string imageUrl, bool burned))',
+	'function burn(uint256 tokenId) public',
+	'function totalMinted() public view returns (uint256)',
+	'event NFTMinted(address indexed owner, uint256 indexed tokenId, uint256 mintTime, uint256 timeout, string showerThought, string imageUrl)'
 ];
 
 /**
@@ -137,45 +143,84 @@ export function disconnectWallet() {
 }
 
 /**
- * Mint a Shower NFT
+ * Mint a Shower NFT v2 with metadata
+ * @param showerThought - User's shower thought (max 100 chars)
+ * @param imageUrl - Firebase Storage URL for shower selfie
+ * @param customTimeout - Timeout in seconds (0 = default 24hr)
  */
-export async function mintShowerNFT(): Promise<{ success: boolean; tokenId?: number; txHash?: string; error?: string }> {
-    const currentSigner = get(signer);
-    const contractAddress = get(CONTRACT_ADDRESS);
-    const address = get(walletAddress);
+export async function mintShowerNFT(
+	showerThought: string = '',
+	imageUrl: string = '',
+	customTimeout: number = 0
+): Promise<{ success: boolean; tokenId?: number; txHash?: string; error?: string }> {
+	const currentSigner = get(signer);
+	const contractAddress = get(CONTRACT_ADDRESS);
+	const address = get(walletAddress);
 
-    if (!currentSigner || !address) {
-        return { success: false, error: 'Wallet not connected' };
-    }
+	if (!currentSigner || !address) {
+		return { success: false, error: 'Wallet not connected' };
+	}
 
-    if (!contractAddress) {
-        return { success: false, error: 'Contract address not set. Please deploy the contract first.' };
-    }
+	if (!contractAddress) {
+		return { success: false, error: 'Contract address not set. Please deploy the contract first.' };
+	}
 
-    try {
-        // Create contract instance
-        const contract = new ethers.Contract(contractAddress, CONTRACT_ABI, currentSigner);
+	try {
+		// Create contract instance
+		const contract = new ethers.Contract(contractAddress, CONTRACT_ABI, currentSigner);
 
-        // Call mint function
-        const tx = await contract.mint(address);
-        
-        // Wait for transaction to be mined
-        const receipt = await tx.wait();
+		// Call mint function with new parameters
+		const tx = await contract.mint(showerThought, imageUrl, customTimeout);
 
-        // Extract token ID from event logs (if available)
-        // For now, we'll just return success
-        return { 
-            success: true, 
-            txHash: receipt.hash,
-            tokenId: 0 // We'll parse this from events later
-        };
-    } catch (error: any) {
-        console.error('Error minting NFT:', error);
-        return { 
-            success: false, 
-            error: error.message || 'Failed to mint NFT' 
-        };
-    }
+		// Wait for transaction to be mined (increased timeout to 5 minutes for user confirmation)
+		const receipt = await tx.wait(1, 300000); // 1 confirmation, 5 minute timeout
+
+		// Parse NFTMinted event to get token ID
+		let tokenId = 0;
+		if (receipt.logs && receipt.logs.length > 0) {
+			const iface = new ethers.Interface(CONTRACT_ABI);
+			for (const log of receipt.logs) {
+				try {
+					const parsedLog = iface.parseLog({
+						topics: [...log.topics],
+						data: log.data
+					});
+					if (parsedLog && parsedLog.name === 'NFTMinted') {
+						tokenId = Number(parsedLog.args.tokenId);
+						break;
+					}
+				} catch (e) {
+					// Not the event we're looking for
+				}
+			}
+		}
+
+		return {
+			success: true,
+			txHash: receipt.hash,
+			tokenId
+		};
+	} catch (error: any) {
+		console.error('Minting error:', error);
+		
+		// Better error messages
+		let errorMsg = error.message || 'Failed to mint NFT';
+		
+		if (error.code === 'ACTION_REJECTED') {
+			errorMsg = 'Transaction rejected by user';
+		} else if (error.message?.includes('insufficient funds')) {
+			errorMsg = 'Insufficient funds for gas fees';
+		} else if (error.message?.includes('invalid address')) {
+			errorMsg = 'Invalid contract address - please deploy ShowerNFTv2 first!';
+		} else if (error.message?.includes('network')) {
+			errorMsg = 'Network error - are you connected to Base Sepolia?';
+		}
+		
+		return {
+			success: false,
+			error: errorMsg
+		};
+	}
 }
 
 /**

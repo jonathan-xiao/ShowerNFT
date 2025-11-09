@@ -27,6 +27,26 @@ export { walletAddress } from './web3';
 export const mintedTokenId = writable<number | null>(null);
 export const mintTxHash = writable<string | null>(null);
 
+// Captured shower selfie (base64, stored locally until mint)
+export const capturedImageData = writable<string | null>(null);
+
+// Latest NFT data from blockchain (loaded via Alchemy on login)
+export interface LatestNFTData {
+	tokenId: number;
+	expiresAt: number; // Unix timestamp (seconds)
+	mintTime: number; // Unix timestamp (seconds)
+	showerThought: string;
+	imageUrl: string;
+	customTimeout: number; // Timeout in seconds
+	isValid: boolean;
+}
+
+export const latestNFTData = writable<LatestNFTData | null>(null);
+export const isLoadingNFTData = writable(false);
+
+// Polling countdown (for debug display)
+export const nextPollIn = writable<number>(10); // Seconds until next poll
+
 // Firebase Auth
 export const currentUser = writable<User | null>(null);
 export const friendsPhoneNumbers = writable<string[]>([]);
