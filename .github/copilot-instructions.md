@@ -39,11 +39,15 @@ src/
 │   │   ├── Login.svelte
 │   │   ├── Onboarding.svelte
 │   │   ├── Dashboard.svelte
+│   │   ├── BrowseUsers.svelte
 │   │   ├── Hero.svelte
 │   │   ├── Tutorial.svelte
 │   │   ├── ShowerTutorial.svelte
 │   │   ├── Verification.svelte
 │   │   ├── MiniGame.svelte
+│   │   ├── SequenceGame.svelte
+│   │   ├── Captcha.svelte
+│   │   ├── WouldYouRather.svelte
 │   │   ├── Minting.svelte
 │   │   ├── ImageCapture.svelte
 │   │   ├── Loading.svelte
@@ -61,6 +65,7 @@ src/
 ├── copilot-instructions.md
 ├── google_firebase_design.md
 ├── sms_design.md           # SMS notification system documentation
+├── browse_community_design.md  # User discovery page documentation
 ├── vercel_design.md
 ├── shower_tutorial_design.md
 └── upgraded_smart_contract.md  # v2 upgrade technical documentation
@@ -68,20 +73,24 @@ src/
 ShowerNFT.sol               # v1 contract (deprecated)
 ShowerNFTv2.sol             # v2 contract (current, awaiting deployment)
 vercel.json                 # Vercel deployment config
+static/
+└── videos/
+    └── uw_stink_instareel_compress.mp4  # Promo video for login page
 ```
 
 ## Current Flow
 
-1. **Login** - Google Sign-In with Firebase Auth
+1. **Login** - Google Sign-In with Firebase Auth + embedded promo video
 2. **Onboarding** - Connect MetaMask wallet + add friend phone numbers
-3. **Dashboard** - Homepage with 24hr countdown timer + "Freshen Up" button
-4. **Tutorial** - Instructions for shower verification (skipped if completed before)
-5. **ShowerTutorial** - Interactive pose detection tutorial
-6. **Verification** - Audio/sensor input + pose detection
-7. **MiniGame** - Lather-Rinse-Repeat sequence memory game
-8. **Minting** - NFT creation process (enter shower thought)
-9. **Loading** - Transaction processing
-10. **Complete** - Success confirmation, return to Dashboard
+3. **Dashboard** - Homepage with 24hr countdown timer + "Freshen Up" + "Browse Community" buttons
+4. **BrowseUsers** - View all users' NFT status with real-time countdowns
+5. **Tutorial** - Instructions for shower verification (skipped if completed before)
+6. **ShowerTutorial** - Interactive pose detection tutorial
+7. **Verification** - Audio/sensor input + pose detection
+8. **MiniGame** - Three sequential challenges (SequenceGame → Captcha → WouldYouRather)
+9. **Minting** - NFT creation process (enter shower thought + capture selfie)
+10. **Loading** - Transaction processing
+11. **Complete** - Success confirmation, return to Dashboard
 
 ## State Management Pattern
 
@@ -133,8 +142,11 @@ Components use: `import { showView } from '$lib/stores';`
 - [x] SMS notifications via Twilio on expiry ✅ **COMPLETE**
 - [x] Visual debug countdown timer ✅ **COMPLETE**
 - [x] Firebase as single source of truth (NOT blockchain) ✅ **COMPLETE**
+- [x] User discovery/browse community page ✅ **COMPLETE**
+- [x] All three mini-games in sequence ✅ **COMPLETE**
+- [x] Promo video on login page ✅ **COMPLETE**
+- [x] Minting button state reset fix ✅ **COMPLETE**
 - [ ] Deploy ShowerNFTv2 contract to Base Sepolia ⏳ **AWAITING DEPLOYMENT**
-- [ ] User search/discovery page to view other users' NFT status
 - [ ] Auto-burn expired NFTs (Chainlink Automation or manual trigger)
 - [ ] Streak tracking
 - [ ] Leaderboard of "cleanest" students
@@ -208,28 +220,34 @@ Components use: `import { showView } from '$lib/stores';`
 
 ### 1. User Discovery Page 🔍
 
-**Goal**: View other users' NFT status at dashboard
+**Status**: ✅ **COMPLETE** - Browse Community feature implemented
 
 **Implementation**:
 
-- Add "Browse Users" page/tab on dashboard
-- Search functionality by email address
+- Purple "👥 Browse Community" button on dashboard
+- View all users' NFT status in real-time
 - Display user cards showing:
   - User name & profile picture
   - Most recent NFT mint status (FRESH ✨ or STINKY 🤢)
   - NFT image from Firebase Storage
+  - Live countdown timer that updates every second
+  - Shower thought text
+  - BaseScan transaction link
   - Pull data from Firestore (user profiles + latestNFT object)
 
 **Acceptance Criteria**:
 
-- [ ] Search bar to find users by email
-- [ ] Display all users as cards
-- [ ] Show user's current hygiene status
-- [ ] Display actual NFT image from latestNFT.imageUrl
+- [x] "Browse Community" button on dashboard ✅
+- [x] Display all users as cards ✅
+- [x] Show user's current hygiene status ✅
+- [x] Display actual NFT image from latestNFT.imageUrl ✅
+- [x] Real-time countdown timers ✅
+- [x] Back to dashboard button ✅
+- [x] Refresh functionality ✅
+
+**Documentation**: See `.github/browse_community_design.md` for full implementation details
 
 ### 2. SMS Notifications on Expiry 📱
-
-**Goal**: Notify friends when NFT expires (user becomes "stinky")
 
 **Status**: ✅ **COMPLETE** - Client-side polling with Twilio SMS
 
@@ -282,7 +300,11 @@ Components use: `import { showView } from '$lib/stores';`
 **See Also**:
 
 - `.github/upgraded_smart_contract.md` - Full v2 upgrade technical details
-- `.github/sms_design.md` - SMS notification system architecture ⭐ **NEW**
+- `.github/sms_design.md` - SMS notification system architecture
+- `.github/browse_community_design.md` - User discovery page documentation
+- `.github/vercel_design.md` - Vercel deployment config
+- `.github/google_firebase_design.md` - Firebase architecture
+- `.github/shower_tutorial_design.md` - Pose detection tutorial
 - `.github/vercel_design.md` - Vercel deployment config
 - `.github/google_firebase_design.md` - Firebase architecture
 - `.github/shower_tutorial_design.md` - Pose detection tutorial

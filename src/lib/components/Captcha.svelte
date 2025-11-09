@@ -2,6 +2,8 @@
     import { showView } from '$lib/stores';
     import { onMount } from 'svelte';
 
+    export let onComplete: (() => void) | undefined = undefined;
+
     // --- State ---
     let tiles: { id: number; url: string; isCorrect: boolean; selected: boolean }[] = [];
     let statusText = '';
@@ -53,7 +55,11 @@
             statusText = 'Correct! Well done!';
             statusClass = 'text-green-600';
             setTimeout(() => {
-                showView('minting');
+                if (onComplete) {
+                    onComplete();
+                } else {
+                    showView('minting');
+                }
             }, 500); // Reduced delay
         } else {
             statusText = 'Incorrect. Please try again.';
@@ -72,7 +78,11 @@
             statusText = 'Correct! There were no shampoo bottles.';
             statusClass = 'text-green-600';
             setTimeout(() => {
-                showView('minting');
+                if (onComplete) {
+                    onComplete();
+                } else {
+                    showView('minting');
+                }
             }, 500); // Reduced delay
         } else {
             statusText = 'Incorrect. There are shampoo bottles to select.';

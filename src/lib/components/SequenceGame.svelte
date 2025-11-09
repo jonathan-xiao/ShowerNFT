@@ -2,6 +2,8 @@
     import { showView } from '$lib/stores';
     import { onMount } from 'svelte';
 
+    export let onComplete: (() => void) | undefined = undefined;
+
     const gameRounds = [
         ['LATHER', 'RINSE'],
         ['LATHER', 'RINSE', 'REPEAT'],
@@ -55,7 +57,13 @@
             
             if (currentRound >= gameRounds.length) {
                 gameStatus = 'Cognitive Challenge Passed!';
-                setTimeout(() => showView('minting'), 2000);
+                setTimeout(() => {
+                    if (onComplete) {
+                        onComplete();
+                    } else {
+                        showView('minting');
+                    }
+                }, 2000);
             } else {
                 setTimeout(showGameRound, 2000);
             }

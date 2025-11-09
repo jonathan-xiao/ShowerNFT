@@ -33,6 +33,23 @@
 </script>
 
 <div class="app-view space-y-6 text-center">
+  <!-- Video Embed -->
+  <div class="flex justify-center">
+    <div class="w-full max-w-md rounded-lg overflow-hidden shadow-lg">
+      <video
+        class="w-full h-auto"
+        controls
+        autoplay
+        muted
+        loop
+        playsinline
+      >
+        <source src="/videos/uw_stink_instareel_compress.mp4" type="video/mp4" />
+        Your browser does not support the video tag.
+      </video>
+    </div>
+  </div>
+
   <div class="space-y-2">
     <h1 class="text-4xl md:text-5xl font-extrabold text-blue-700">
       Welcome to ShowerNFT

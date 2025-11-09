@@ -2,6 +2,8 @@
 	import { showView } from '$lib/stores';
 	import { onMount } from 'svelte';
 
+	export let onComplete: (() => void) | undefined = undefined;
+
 	// --- Data ---
 	const questions = [
 		{ title: 'WOULD YOU RATHER', left: 'Always use 17-in-1 shampoo', right: 'Never use shampoo again' },
@@ -73,7 +75,11 @@
 		gameEnded = true;
 		// After showing the summary for a few seconds, move to the next view
 		setTimeout(() => {
-			showView('minting');
+			if (onComplete) {
+				onComplete();
+			} else {
+				showView('minting');
+			}
 		}, 4000);
 	}
 </script>

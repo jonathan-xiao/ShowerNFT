@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onMount } from "svelte";
   import {
     showView,
     showerThought,
@@ -15,6 +16,14 @@
   let customTimeoutMinutes: number | null = null;
   let isMinting = false;
   let errorMessage = "";
+
+  // Reset state on mount to ensure clean slate
+  onMount(() => {
+    isMinting = false;
+    errorMessage = "";
+    thought = "";
+    customTimeoutMinutes = null;
+  });
 
   // Validation
   const MAX_THOUGHT_LENGTH = 100;
@@ -101,19 +110,23 @@
         // Clear captured image for next time
         capturedImageData.set(null);
 
+        // Reset minting state
+        isMinting = false;
+
         // Success! Show complete screen
         showView("complete");
       } else {
-        // Show error and go back
+        // Show error and reset state
         errorMessage = result.error || "Failed to mint NFT";
         isMinting = false;
-        showView("minting");
+        // Don't navigate - stay on this page to show error
       }
     } catch (err) {
       console.error("Minting error:", err);
       errorMessage =
         err instanceof Error ? err.message : "Failed to mint NFT";
       isMinting = false;
+      // Don't navigate - stay on this page to show error
     }
   }
 </script>

@@ -20,17 +20,18 @@ When your NFT expires, your friends get notified that you've become "stinky" —
 - ✅ **Wallet Integration** - MetaMask connection with Base Sepolia testnet
 - ✅ **Interactive Pose Tutorial** - TensorFlow.js MoveNet pose detection for shower gesture verification
 - ✅ **NFT Minting** - ERC-721 smart contract with custom timeout & metadata storage
-- ✅ **Gamified Verification** - Memory games and mini-challenges
+- ✅ **Three Mini-Games** - Sequential challenges: Memory game → Captcha → Would You Rather
 - ✅ **User Dashboard** - Real-time countdown timer showing NFT validity
+- ✅ **Browse Community** - View all users' hygiene status with live countdown timers
 - ✅ **Firebase Backend** - User profiles, latest NFT status, friend phone numbers
 - ✅ **Image Upload** - Client-side Firebase Storage with automatic deletion on expiry
 - ✅ **SMS Notifications** - Twilio integration with 10-second client-side polling
 - ✅ **Automatic Cleanup** - Expired NFTs deleted from Firebase (Firestore + Storage)
 - ✅ **Vercel Deployment** - CI/CD with auto-deploy from GitHub
+- ✅ **Promo Video** - Embedded on login page
 
 ### Planned Features
 
-- 🔜 **User Discovery** - Browse other users' hygiene status
 - 🔜 **Enhanced Smart Contract Deployment** - Deploy ShowerNFTv2 to Base Sepolia
 - 🔜 **Blockchain Auto-Burn** - Chainlink Automation for on-chain NFT burning
 - 🔜 **Streak Tracking** - Leaderboard of cleanest students
@@ -128,9 +129,10 @@ src/
 │   ├── web3.ts                      # Web3 utilities (wallet, minting)
 │   ├── alchemyService.ts            # Alchemy API (DEPRECATED - not used)
 │   ├── components/
-│   │   ├── Login.svelte             # Google Sign-In
+│   │   ├── Login.svelte             # Google Sign-In + promo video
 │   │   ├── Onboarding.svelte        # Wallet + friends setup
 │   │   ├── Dashboard.svelte         # Homepage with 24hr countdown
+│   │   ├── BrowseUsers.svelte       # Community hygiene status viewer
 │   │   ├── Hero.svelte              # Landing page
 │   │   ├── Tutorial.svelte          # Instructions
 │   │   ├── ShowerTutorial.svelte    # ML pose detection tutorial
@@ -140,7 +142,10 @@ src/
 │   │   ├── Verification.svelte      # Audio/sensor verification
 │   │   ├── MiniGame.svelte          # Memory game wrapper
 │   │   ├── SequenceGame.svelte      # Lather-Rinse-Repeat game
+│   │   ├── Captcha.svelte           # Shampoo bottle selection game
+│   │   ├── WouldYouRather.svelte    # Question game
 │   │   ├── Minting.svelte           # NFT creation form
+│   │   ├── ImageCapture.svelte      # Camera capture component
 │   │   ├── Loading.svelte           # Transaction processing
 │   │   └── Complete.svelte          # Success screen
 │   └── ml/
@@ -155,13 +160,18 @@ src/
 .github/
 ├── copilot-instructions.md          # AI development guide
 ├── google_firebase_design.md        # Firebase architecture docs
-├── sms_design.md                    # SMS notification system ⭐ NEW
+├── sms_design.md                    # SMS notification system
+├── browse_community_design.md       # User discovery page docs
 ├── shower_tutorial_design.md        # ML pose detection technical docs
 ├── upgraded_smart_contract.md       # ShowerNFTv2 upgrade documentation
 └── vercel_design.md                 # Deployment & CI/CD guide
 
-ShowerNFT.sol                        # ERC-721 smart contract
-vercel.json                          # Vercel config + cron jobs
+ShowerNFT.sol                        # ERC-721 smart contract (v1, deprecated)
+ShowerNFTv2.sol                      # ERC-721 smart contract (v2, current)
+vercel.json                          # Vercel config
+static/
+└── videos/
+    └── uw_stink_instareel_compress.mp4  # Promo video
 ```
 
 ---
