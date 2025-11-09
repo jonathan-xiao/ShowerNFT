@@ -16,7 +16,7 @@ ML-powered webcam verification using TensorFlow.js MoveNet pose detection. Users
 
 Orchestrates 4-step flow, initializes TensorFlow.js WebGL backend, tracks completion.
 
-**Steps**: Rub hands (10s), Scrub head (10s), Scrub arms (10s), Scrub armpits (10s)
+**Steps**: Scrub head (10s), scrub armpits (10s), scrub butt (10s)
 
 ### 2. WebcamFeed.svelte
 
